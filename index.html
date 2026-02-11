@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Calendario Rosado</title>
+
+  <style>
+    :root{
+      --pink-mist:#F7DAE7;
+      --bubblegum:#E2B4C1;
+      --cherry-soda:#D38C9D;
+      --ruby-petals:#A55166;
+
+      --ink:#2f2f2f;
+      --muted:#7a7a7a;
+      --bg:#ffffff;
+      --card:#ffffff;
+
+      /* Tamaños */
+      --cell:42px;
+      --gap:8px;
+    }
+
+    *{box-sizing:border-box}
+
+    body{
+      margin:0;
+      min-height:100vh;
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      background:var(--bg);
+      font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      color:var(--ink);
+    }
+
+    .calendar{
+      background:var(--card);
+      border-radius:20px;
+      padding:20px;
+      box-shadow:0 10px 35px rgba(165,81,102,.15);
+      /* ancho cómodo para que no se vea “estrecho” */
+      width:min(440px, 92vw);
+    }
+
+    .header{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      margin-bottom:15px;
+    }
+
+    .month{
+      font-size:18px;
+      font-weight:600;
+      color: var(--ruby-petals);
+    }
+
+    .nav button{
+      border:none;
+      background:var(--pink-mist);
+      color:var(--ruby-petals);
+      padding:8px 12px;
+      border-radius:12px;
+      cursor:pointer;
+      font-weight:600;
+    }
+
+    .grid{
+      display:grid;
+      /* 1 columna para semana + 7 columnas con tamaño fijo */
+      grid-template-columns:40px repeat(7, var(--cell));
+      gap:var(--gap);
+      text-align:center;
+      align-items:center;
+      justify-content:center;
+      justify-items:center;
+    }
+
+    .dow{
+      font-size:11px;
+      color:var(--muted);
+      text-transform:uppercase;
+    }
+
+    .week-number{
+      font-size:11px;
+      color:var(--ruby-petals);
+    }
+
+    .day{
+      width:var(--cell);
+      height:var(--cell);
+      border-radius:50%;
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      cursor:pointer;
+    }
+
+    .day:hover{
+      background:var(--pink-mist);
+    }
+
+    .today{
+      background:var(--ruby-petals);
+      color:white;
+    }
+
+    .outside{
+      opacity:.3;
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="calendar">
+  <div class="header">
+    <div class="month" id="monthLabel"></div>
+    <div class="nav">
+      <button onclick="changeMonth(-1)">◀</button>
+      <button onclick="changeMonth(1)">▶</button>
+    </div>
+  </div>
+
+  <div class="grid" id="calendarGrid"></div>
+</div>
+
+<script>
+
+const MONTHS = [
+  "Enero","Febrero","Marzo","Abril","Mayo","Junio",
+  "Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"
+];
+
+let currentDate = new Date();
+currentDate.setDate(1);
+
+function getISOWeek(date){
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const dayNum = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(),0,1));
+  return Math.ceil((((d - yearStart) / 86400000) + 1)/7);
+}
+
+function renderCalendar(){
+  const grid = document.getElementById("calendarGrid");
+  const monthLabel = document.getElementById("monthLabel");
+
+  grid.innerHTML = "";
+
+  const year = currentDate.getFullYear();
+  const month = currentDate.getMonth();
+
+  monthLabel.textContent = MONTHS[month] + " " + year;
+
+  const firstDay = new Date(year, month, 1);
+  const startDay = new Date(firstDay);
+  startDay.setDate(firstDay.getDate() - ((firstDay.getDay() + 6) % 7));
+
+  const DOW = ["SEM","LUN","MAR","MIÉ","JUE","VIE","SÁB","DOM"];
+
+  DOW.forEach(d => {
+    const el = document.createElement("div");
+    el.className = "dow";
+    el.textContent = d;
+    grid.appendChild(el);
+  });
+
+  let date = new Date(startDay);
+
+  for(let week=0; week<6; week++){
+    const weekNum = document.createElement("div");
+    weekNum.className = "week-number";
+    weekNum.textContent = getISOWeek(date);
+    grid.appendChild(weekNum);
+
+    for(let i=0; i<7; i++){
+      const dayEl = document.createElement("div");
+      dayEl.className = "day";
+      dayEl.textContent = date.getDate();
+
+      if(date.getMonth() !== month){
+        dayEl.classList.add("outside");
+      }
+
+      const today = new Date();
+      if(
+        date.getDate() === today.getDate() &&
+        date.getMonth() === today.getMonth() &&
+        date.getFullYear() === today.getFullYear()
+      ){
+        dayEl.classList.add("today");
+      }
+
+      grid.appendChild(dayEl);
+      date.setDate(date.getDate()+1);
+    }
+  }
+}
+
+function changeMonth(offset){
+  currentDate.setMonth(currentDate.getMonth()+offset);
+  renderCalendar();
+}
+
+renderCalendar();
+
+// Actualiza automáticamente a medianoche
+(function autoRefresh(){
+  const now = new Date();
+  const next = new Date(now);
+  next.setHours(24,0,1,0);
+  setTimeout(()=>{
+    renderCalendar();
+    autoRefresh();
+  }, next-now);
+})();
+
+</script>
+
+</body>
+</html>
