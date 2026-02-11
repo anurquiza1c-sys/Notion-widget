@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Calendario</title>
+  <style>
+    :root{
+      /* Paleta rosada (de tu imagen) */
+      --pink-mist:#F7DAE7;
+      --bubblegum:#E2B4C1;
+      --cherry-soda:#D38C9D;
+      --ruby-petals:#A55166;
+
+      /* Texto (gris oscuro) */
+      --ink:#2f2f2f;
+      --muted:#7a7a7a;
+
+      --card:#ffffff;
+      /* Fondo detrás del calendario (blanco) */
+      --bg:#ffffff;
+
+      --shadow: 0 18px 55px rgba(165,81,102,.18);
+      --radius: 22px;
+
+      --cell: 42px;
+      --gap: 8px;
+    }
+
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      min-height:100vh;
+      display:grid;
+      place-items:center;
+      background: var(--bg);
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+      color:var(--ink);
+    }
+
+    .card{
+      width:min(420px, 92vw);
+      background:var(--card);
+      border-radius:var(--radius);
+      box-shadow: var(--shadow);
+      padding:18px 18px 16px;
+      border:1px solid rgba(165,81,102,.10);
+    }
+
+    .top{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      margin-bottom:10px;
+    }
+
+    .month{
+      font-weight:650;
+      letter-spacing:.2px;
+      font-size:18px;
+    }
+
+    .nav{
+      display:flex;
+      gap:10px;
+      align-items:center;
+    }
+
+    button.icon{
+      width:34px;
+      height:34px;
+      border-radius:12px;
+      border:1px solid rgba(165,81,102,.18);
+      background: rgba(247,218,231,.35);
+      color: var(--ruby-petals);
+      display:grid;
+      place-items:center;
+      cursor:pointer;
+      transition: transform .08s ease, background .15s ease;
+    }
+    button.icon:hover{ background: rgba(226,180,193,.38); }
+    button.icon:active{ transform: scale(.98); }
+
+    .legend{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      margin: 8px 0 12px;
+      color: var(--muted);
+      font-size:12px;
+    }
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:7px 10px;
+      border-radius:999px;
+      border:1px solid rgba(165,81,102,.16);
+      background: rgba(247,218,231,.28);
+    }
+    .dot{ width:10px; height:10px; border-radius:50%; background:var(--bubblegum); }
+    .dot.today{ background: var(--ruby-petals); }
+
+    .grid{
+      display:grid;
+      grid-template-columns: 38px repeat(7, var(--cell));
+      gap: var(--gap);
+      align-items:center;
+    }
+
+    .dow{
+      font-size:11px;
+      letter-spacing:.14em;
+      text-transform:uppercase;
+      color: var(--muted);
+      text-align:center;
+      padding:4px 0;
+      user-select:none;
+    }
+
+    .wk{
+      font-size:11px;
+      color: rgba(165,81,102,.75);
+      text-align:center;
+      user-select:none;
+    }
+
+    .cell{
+      width: var(--cell);
+      height: var(--cell);
+      border-radius: 999px;
+      display:grid;
+      place-items:center;
+      font-size:14px;
+      line-height:1;
+      user-select:none;
+      color: var(--ink); /* fuerza gris oscuro en números */
+    }
+
+    /* Días del mes actual */
+    .day{
+      background: transparent;
+      border:1px solid transparent;
+    }
+
+    /* Días fuera de mes */
+    .outside{
+      color: rgba(47,47,47,.35);
+      border:1px dashed rgba(165,81,102,.18);
+      background: transparent;
+    }
+
+    /* Marcados suaves (tipo screenshot) */
+    .soft{
+      background: rgba(247,218,231,.70);
+      border:1px solid rgba(226,180,193,.15);
+    }
+
+    /* Hoy */
+    .today{
+      background: var(--ruby-petals);
+      color:white;
+      box-shadow: 0 10px 28px rgba(165,81,102,.35);
+    }
+
+    /* Día seleccionado (si haces click) */
+    .selected{
+      outline: 3px solid rgba(226,180,193,.55);
+      outline-offset: 2px;
+    }
+
+    .footer{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      margin-top:12px;
+      font-size:12px;
+      color: var(--muted);
+    }
+
+    .mini-btn{
+      border:none;
+      cursor:pointer;
+      padding:8px 10px;
+      border-radius:12px;
+      background: rgba(226,180,193,.25);
+      color: var(--ruby-petals);
+      font-weight:600;
+    }
+    .mini-btn:hover{ background: rgba(226,180,193,.33); }
+
+    .hint{ opacity:.9; }
+
+    @media (max-width: 360px){
+      :root{ --cell: 38px; --gap: 7px; }
+      .grid{ grid-template-columns: 34px repeat(7, var(--cell)); }
+    }
+  </style>
+</head>
+<body>
+  <main class="card" aria-label="Calendario con número de semana">
+    <header class="top">
+      <div class="month" id="monthLabel">—</div>
+      <div class="nav">
+        <button class="icon" id="prev" aria-label="Mes anterior" type="button">◀</button>
+        <button class="icon" id="next" aria-label="Mes siguiente" type="button">▶</button>
+      </div>
+    </header>
+
+    <div class="legend" aria-hidden="true">
+      <span class="pill"><span class="dot"></span> Marcado</span>
+      <span class="pill"><span class="dot today"></span> Hoy</span>
+    </div>
+
+    <section class="grid" id="grid"></section>
+
+    <footer class="footer">
+      <button class="mini-btn" id="goToday" type="button">Ir a hoy</button>
+      <span class="hint" id="clock">—</span>
+    </footer>
+  </main>
+
+  <script>
+    // Fix robusto para sandboxes:
+    // - No asume que console existe
+    // - No asume que el DOM está listo
+    // - Evita APIs propensas a fallar en entornos restringidos (p.ej. locales específicos)
+    (function initCalendar(){
+      const hasWindow = typeof window !== 'undefined';
+      const hasDocument = typeof document !== 'undefined';
+
+      const safeConsole = {
+        log: (...args) => { try { if (hasWindow && window.console && console.log) console.log(...args); } catch(_){} },
+        error: (...args) => { try { if (hasWindow && window.console && console.error) console.error(...args); } catch(_){} },
+        assert: (cond, msg) => { try { if (hasWindow && window.console && console.assert) console.assert(cond, msg); } catch(_){} }
+      };
+
+      if (!hasWindow || !hasDocument) {
+        // No DOM disponible (algunos pre-renderers/sandboxes)
+        safeConsole.error('Calendario: DOM no disponible en este entorno.');
+        return;
+      }
+
+      const onReady = (fn) => {
+        try {
+          if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', fn, { once: true });
+          } else {
+            fn();
+          }
+        } catch (e) {
+          // Si el sandbox bloquea addEventListener, intentamos ejecución directa.
+          try { fn(); } catch (e2) { safeConsole.error('Calendario: no se pudo inicializar.', e2); }
+        }
+      };
+
+      onReady(() => {
+        try {
+          // --- Utils de fecha ---
+          const pad2 = (n) => String(n).padStart(2, '0');
+
+          // ISO week number (lunes como primer día)
+          function isoWeek(date){
+            const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+            const dayNum = d.getUTCDay() || 7; // 1..7
+            d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+            const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+            return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+          }
+
+          function startOfISOWeek(date){
+            const d = new Date(date);
+            const day = d.getDay(); // 0 dom .. 6 sáb
+            const diff = (day === 0 ? -6 : 1) - day; // llevar a lunes
+            d.setDate(d.getDate() + diff);
+            d.setHours(0,0,0,0);
+            return d;
+          }
+
+          function sameDay(a,b){
+            return a.getFullYear()===b.getFullYear() && a.getMonth()===b.getMonth() && a.getDate()===b.getDate();
+          }
+
+          // --- Tests (console) ---
+          // No lanzar excepciones: solo assertions.
+          function runTests(){
+            // Casos típicos ISO week around year boundaries
+            safeConsole.assert(isoWeek(new Date(Date.UTC(2021,0,4))) === 1, 'Test ISO: 2021-01-04 debe ser semana 1');
+            safeConsole.assert(isoWeek(new Date(Date.UTC(2020,11,31))) === 53, 'Test ISO: 2020-12-31 debe ser semana 53');
+            safeConsole.assert(isoWeek(new Date(Date.UTC(2015,0,1))) === 1, 'Test ISO: 2015-01-01 debe ser semana 1');
+            safeConsole.assert(isoWeek(new Date(Date.UTC(2016,0,3))) === 53, 'Test ISO: 2016-01-03 debe ser semana 53 (ISO 2015)');
+
+            // Tests adicionales: inicio de semana ISO (lunes)
+            const mon = startOfISOWeek(new Date(2024, 6, 1)); // 1-jul-2024
+            safeConsole.assert(mon.getDay() === 1, 'Test startOfISOWeek: debe devolver lunes');
+
+            // Tests adicionales: sameDay
+            const a = new Date(2024, 0, 1); a.setHours(0,0,0,0);
+            const b = new Date(2024, 0, 1); b.setHours(23,59,59,999);
+            safeConsole.assert(sameDay(a, b), 'Test sameDay: mismo día debe ser true');
+          }
+          runTests();
+
+          // --- Estado ---
+          let view = new Date();
+          view.setDate(1);
+
+          // Días “marcados” (demo). Puedes reemplazar por tu lógica.
+          // Formato: 'YYYY-MM-DD'
+          const softMarks = new Set([
+            // '2024-07-09', '2024-07-12', '2024-07-28', '2024-07-29', '2024-07-30', '2024-07-31'
+          ]);
+
+          let selectedKey = null;
+
+          // --- DOM refs (con guardas) ---
+          const monthLabel = document.getElementById('monthLabel');
+          const grid = document.getElementById('grid');
+          const clock = document.getElementById('clock');
+          const prevBtn = document.getElementById('prev');
+          const nextBtn = document.getElementById('next');
+          const goTodayBtn = document.getElementById('goToday');
+
+          if(!monthLabel || !grid || !clock || !prevBtn || !nextBtn || !goTodayBtn){
+            safeConsole.error('Calendario: no se encontraron elementos del DOM.');
+            return;
+          }
+
+          const DOW = ['LUN','MAR','MIÉ','JUE','VIE','SÁB','DOM'];
+          const MONTHS_ES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+
+          function setMonthLabel(date){
+            const y = date.getFullYear();
+            const m = date.getMonth();
+            monthLabel.textContent = `${MONTHS_ES[m]} ${y}`;
+          }
+
+          function render(){
+            const today = new Date();
+            today.setHours(0,0,0,0);
+
+            const y = view.getFullYear();
+            const m = view.getMonth();
+
+            setMonthLabel(view);
+
+            // Limpiar grid
+            grid.innerHTML = '';
+
+            // Encabezados: columna semana + días
+            const wkHead = document.createElement('div');
+            wkHead.className = 'dow';
+            wkHead.textContent = 'SEM';
+            grid.appendChild(wkHead);
+
+            for (const d of DOW) {
+              const el = document.createElement('div');
+              el.className = 'dow';
+              el.textContent = d;
+              grid.appendChild(el);
+            }
+
+            // Rango a mostrar: desde el lunes de la semana que contiene el 1ro del mes
+            const firstOfMonth = new Date(y, m, 1);
+            const start = startOfISOWeek(firstOfMonth);
+
+            // Hasta completar 6 semanas visuales (6 filas) = 42 días
+            const days = [];
+            for(let i=0;i<42;i++){
+              const d = new Date(start);
+              d.setDate(start.getDate() + i);
+              days.push(d);
+            }
+
+            // Render por filas (semanas)
+            for(let row=0; row<6; row++){
+              const rowStart = days[row*7];
+              const wn = isoWeek(rowStart);
+
+              const wk = document.createElement('div');
+              wk.className = 'wk';
+              wk.textContent = wn;
+              grid.appendChild(wk);
+
+              for(let col=0; col<7; col++){
+                const d = days[row*7 + col];
+                const key = `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;
+
+                const cell = document.createElement('button');
+                cell.type = 'button';
+                cell.className = 'cell day';
+                cell.textContent = d.getDate();
+                cell.setAttribute('aria-label', key);
+
+                const inMonth = d.getMonth() === m;
+                if(!inMonth) cell.classList.add('outside');
+                if(softMarks.has(key)) cell.classList.add('soft');
+                if(sameDay(d, today)) cell.classList.add('today');
+                if(selectedKey === key) cell.classList.add('selected');
+
+                cell.addEventListener('click', () => {
+                  selectedKey = key;
+                  render();
+                });
+
+                grid.appendChild(cell);
+              }
+            }
+
+            // reloj simple
+            const now = new Date();
+            clock.textContent = `Hoy: ${pad2(now.getDate())}/${pad2(now.getMonth()+1)}/${now.getFullYear()}`;
+          }
+
+          function shiftMonth(delta){
+            const y = view.getFullYear();
+            const m = view.getMonth();
+            view = new Date(y, m + delta, 1);
+            render();
+          }
+
+          prevBtn.addEventListener('click', () => shiftMonth(-1));
+          nextBtn.addEventListener('click', () => shiftMonth(1));
+
+          goTodayBtn.addEventListener('click', () => {
+            const t = new Date();
+            view = new Date(t.getFullYear(), t.getMonth(), 1);
+            selectedKey = `${t.getFullYear()}-${pad2(t.getMonth()+1)}-${pad2(t.getDate())}`;
+            render();
+          });
+
+          // Auto-actualiza el día (re-render a medianoche local)
+          function scheduleMidnightRefresh(){
+            const now = new Date();
+            const next = new Date(now);
+            next.setHours(24,0,1,0); // 00:00:01
+            const ms = next - now;
+            window.setTimeout(() => {
+              try { render(); } catch(e) { safeConsole.error('Calendario: error al refrescar.', e); }
+              scheduleMidnightRefresh();
+            }, ms);
+          }
+
+          // Render inicial
+          render();
+          scheduleMidnightRefresh();
+
+          // Si quieres “marcados suaves” como en tu ejemplo, agrega fechas aquí:
+          // softMarks.add('2026-02-12'); render();
+        } catch (e) {
+          // Algunos sandboxes esconden el stack y muestran "Script error".
+          // Igual dejamos log seguro.
+          try {
+            (window.console && console.error) && console.error('Calendario: error fatal', e);
+          } catch(_) {}
+        }
+      });
+    })();
+  </script>
+</body>
+</html>
