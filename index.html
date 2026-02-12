@@ -11,37 +11,37 @@
       --bubblegum:#E2B4C1;
       --cherry-soda:#D38C9D;
       --ruby-petals:#A55166;
-
       --ink:#2f2f2f;
       --muted:#7a7a7a;
       --bg:#ffffff;
-      --card:#ffffff;
-
-      /* Tamaños */
       --cell:42px;
       --gap:8px;
     }
 
     *{box-sizing:border-box}
 
-    body{
+    html,body{
       margin:0;
-      min-height:100vh;
+      padding:0;
+      background:var(--bg);
+      font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      overflow:hidden; /* 🔥 evita scroll en Notion */
+    }
+
+    .wrapper{
       display:flex;
       justify-content:center;
       align-items:center;
-      background:var(--bg);
-      font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      color:var(--ink);
+      padding:10px;
     }
 
     .calendar{
-      background:var(--card);
+      background:#fff;
       border-radius:20px;
-      padding:20px;
+      padding:18px;
       box-shadow:0 10px 35px rgba(165,81,102,.15);
-      /* ancho cómodo para que no se vea “estrecho” */
-      width:min(440px, 92vw);
+      width:100%;
+      max-width:420px; /* 🔥 tamaño perfecto para Notion */
     }
 
     .header{
@@ -54,7 +54,7 @@
     .month{
       font-size:18px;
       font-weight:600;
-      color: var(--ruby-petals);
+      color:var(--ruby-petals);
     }
 
     .nav button{
@@ -69,13 +69,10 @@
 
     .grid{
       display:grid;
-      /* 1 columna para semana + 7 columnas con tamaño fijo */
-      grid-template-columns:40px repeat(7, var(--cell));
+      grid-template-columns:30px repeat(7, 1fr); /* 🔥 columnas fluidas */
       gap:var(--gap);
       text-align:center;
       align-items:center;
-      justify-content:center;
-      justify-items:center;
     }
 
     .dow{
@@ -90,13 +87,13 @@
     }
 
     .day{
-      width:var(--cell);
-      height:var(--cell);
+      aspect-ratio:1/1; /* 🔥 mantiene círculo perfecto */
       border-radius:50%;
       display:flex;
       justify-content:center;
       align-items:center;
       cursor:pointer;
+      width:100%;
     }
 
     .day:hover{
@@ -116,6 +113,7 @@
 
 <body>
 
+<div class="wrapper">
 <div class="calendar">
   <div class="header">
     <div class="month" id="monthLabel"></div>
@@ -126,6 +124,7 @@
   </div>
 
   <div class="grid" id="calendarGrid"></div>
+</div>
 </div>
 
 <script>
@@ -149,12 +148,10 @@ function getISOWeek(date){
 function renderCalendar(){
   const grid = document.getElementById("calendarGrid");
   const monthLabel = document.getElementById("monthLabel");
-
   grid.innerHTML = "";
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
-
   monthLabel.textContent = MONTHS[month] + " " + year;
 
   const firstDay = new Date(year, month, 1);
@@ -208,17 +205,6 @@ function changeMonth(offset){
 }
 
 renderCalendar();
-
-// Actualiza automáticamente a medianoche
-(function autoRefresh(){
-  const now = new Date();
-  const next = new Date(now);
-  next.setHours(24,0,1,0);
-  setTimeout(()=>{
-    renderCalendar();
-    autoRefresh();
-  }, next-now);
-})();
 
 </script>
 
